@@ -6,14 +6,14 @@ on:
     - cron:  '0 5 * * *'
 
 env:
-  MYSQL_BIN_NAME: "mysql-8.0.32-winx64"
+  MYSQL_BIN_NAME: "mysql-8.0.33-winx64"
   MYSQL_BASE_PREBUILD_ADR: "https://dev.mysql.com/get/Downloads/MySQL-8.0/"
   MYSQL_BIN_EXT: ".zip"
   MYSQL_FINAL_SERVER_FOLDER: "mysql-server"
   MYSQL_DEFAULT_ROOT: "trinity"
   CACHED_FOLDER: "${{github.workspace}}\\CachedFolder"
   WORK_FOLDER: "${{github.workspace}}\\WorkFolder"
-  DB_FOLDER: "${{github.workspace}}\\ElunaCataPreservation-db"
+  DB_FOLDER: "${{github.workspace}}\\CATA-SPP-db"
 
 jobs:
   build:
@@ -26,8 +26,8 @@ jobs:
         run: |
           echo "MYSQL_BIN_ARCH=${{env.MYSQL_BIN_NAME}}${{env.MYSQL_BIN_EXT}}" >> $env:GITHUB_ENV
           echo "MYSQL_PREBUILD_ADR=${{env.MYSQL_BASE_PREBUILD_ADR}}${{env.MYSQL_BIN_NAME}}${{env.MYSQL_BIN_EXT}}" >> $env:GITHUB_ENV
-          echo "CORE_REPO=Niam5/ElunaCataPreservation" >> $env:GITHUB_ENV
-          echo "CORE_FOLDER=${{github.workspace}}/ElunaCataPreservation" >> $env:GITHUB_ENV
+          echo "CORE_REPO=fcshden/TC-Cata" >> $env:GITHUB_ENV
+          echo "CORE_FOLDER=${{github.workspace}}/TC-Cata" >> $env:GITHUB_ENV
           echo "PROJECT_NAME=${{github.repository}}" >> $env:GITHUB_ENV
           md -Force "${{env.CACHED_FOLDER}}"
           md -Force "${{env.WORK_FOLDER}}"
@@ -89,12 +89,12 @@ jobs:
           $DefaultConfFile +="`n"
           $DefaultConfFile +="basedir                           = `"${{env.MYSQL_FINAL_SERVER_FOLDER}}`"`n"
           $DefaultConfFile +="datadir                           = `"data`"`n"
-          $DefaultConfFile +="port                              = 3306`n"
+          $DefaultConfFile +="port                              = 3310`n"
           $BatchFile ="@echo off`n"
           $BatchFile +="COLOR F`n"
           $BatchFile +="echo                     ********************************************`n"
           $BatchFile +="echo                     * MySQL for Cataclysm Preservation Project *`n"
-          $BatchFile +="echo                     * PORT : 3306                              *`n"
+          $BatchFile +="echo                     * PORT : 3310                              *`n"
           $BatchFile +="echo                     ********************************************`n"
           $BatchFile +="echo.`n"
           $BatchFile +="echo MySQL for Cata Preservation Project is currently running.`n"
