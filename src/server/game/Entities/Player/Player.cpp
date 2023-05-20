@@ -39,6 +39,7 @@
 #include "CombatLogPackets.h"
 #include "Common.h"
 #include "ConditionMgr.h"
+#include "Config.h"
 #include "CreatureAI.h"
 #include "DatabaseEnv.h"
 #include "DB2Stores.h"
@@ -24908,8 +24909,17 @@ void Player::StoreLootItem(uint8 lootSlot, Loot* loot, GameObject* go)
 
     if (!item)
     {
-        SendEquipError(EQUIP_ERR_LOOT_GONE, nullptr, nullptr);
-        return;
+        if (sConfigMgr->GetBoolDefault("AOE.LOOT.enable", true))
+        {
+            //SendEquipError(EQUIP_ERR_LOOT_GONE, nullptr, nullptr); prevents error already loot from spamming
+            return;
+        }
+
+        else
+        {
+            SendEquipError(EQUIP_ERR_LOOT_GONE, nullptr, nullptr);
+            return;
+        }
     }
 
     if (!item->AllowedForPlayer(this))

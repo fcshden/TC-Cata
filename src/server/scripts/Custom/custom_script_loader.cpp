@@ -20,6 +20,39 @@
 
 // The name of this function should match:
 // void Add${NameOfDirectory}Scripts()
+void AddSC_FireWorksOnLevelUp();
+void AddSolocraftScripts();
+void AddSC_skip_StarterArea();
+void AddSC_start_equipment();
+void AddSC_XpWeekend();
+void AddSC_AutoBalance();
+void AddLfgSoloScripts();
+void AddMoneyForKillsScripts();
+void AddGainHonorGuardScripts();
+void AddGainConquestGuardScripts();
+void AddSC_Death_Announcer();
+void AddSC_save_on_levelup();
+void AddSC_WhoLoggedScripts();
+void AddSC_racial_traits_npc();
+void AddSC_Band_aid();
+void AddSC_announce_login();
+
 void AddCustomScripts()
 {
+    AddSC_FireWorksOnLevelUp();
+    AddSolocraftScripts();
+    AddSC_skip_StarterArea();
+    AddSC_start_equipment();
+    AddSC_XpWeekend();
+    AddSC_AutoBalance();
+    AddLfgSoloScripts();
+    AddMoneyForKillsScripts();
+    AddGainHonorGuardScripts();
+    AddGainConquestGuardScripts();
+    AddSC_Death_Announcer();
+    AddSC_save_on_levelup();
+    AddSC_WhoLoggedScripts();
+    AddSC_racial_traits_npc();
+    AddSC_Band_aid();
+    AddSC_announce_login();
 }

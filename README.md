@@ -1,9 +1,13 @@
+# catacomspp project 
+A Fork and Community Single Player Project Dev project of the Catacylsm Preservation Project by Trinitycore.
+Cata Com Spp is a fork of The Cataclysm Preservation Project. all initail commits are their work and credit goes to them for that. That aside, this is a passion project to bring the Single Player Project to both Cata and Mop. Currently we are working on cata only.
+
 # ![logo](https://community.trinitycore.org/public/style_images/1_trinitycore.png) TrinityCore
 
 ## Build Status
 
 
-4.3.4 (master)
+4.3.4 
 :------------:
 [![CircleCI Status](https://circleci.com/gh/The-Cataclysm-Preservation-Project/TrinityCore.svg?style=shield&branch=master)](https://app.circleci.com/pipelines/github/The-Cataclysm-Preservation-Project/TrinityCore?branch=master)
 [![AppVeyor Status](https://ci.appveyor.com/api/projects/status/github/The-Cataclysm-Preservation-Project/TrinityCore?branch=master&svg=true)](https://ci.appveyor.com/project/Ovahlord/trinitycore)
@@ -63,6 +67,18 @@ Read file [COPYING](COPYING)
 
 Read file [AUTHORS](AUTHORS)
 
+Forked From
+
+The Cataclysm Prevervation Project
+
+
+Cata Single Player Project Contributors
+
+acidmanifesto
+aW49qA2V3RxMqD
+Gwenpool
+Jinnaix
+Serithul
 
 ## Links
 
