@@ -1,0 +1,191 @@
+name: Build Database
+
+on:
+  schedule:
+    # every day at 5am
+    - cron:  '0 5 * * *'
+
+env:
+  MYSQL_BIN_NAME: "mysql-8.0.32-winx64"
+  MYSQL_BASE_PREBUILD_ADR: "https://dev.mysql.com/get/Downloads/MySQL-8.0/"
+  MYSQL_BIN_EXT: ".zip"
+  MYSQL_FINAL_SERVER_FOLDER: "mysql-server"
+  MYSQL_DEFAULT_ROOT: "trinity"
+  CACHED_FOLDER: "${{github.workspace}}\\CachedFolder"
+  WORK_FOLDER: "${{github.workspace}}\\WorkFolder"
+  DB_FOLDER: "${{github.workspace}}\\ElunaCataPreservation-db"
+
+jobs:
+  build:
+    runs-on: windows-2022
+    permissions:
+      contents: write
+
+    steps:
+      - name: Set environmental variables
+        run: |
+          echo "MYSQL_BIN_ARCH=${{env.MYSQL_BIN_NAME}}${{env.MYSQL_BIN_EXT}}" >> $env:GITHUB_ENV
+          echo "MYSQL_PREBUILD_ADR=${{env.MYSQL_BASE_PREBUILD_ADR}}${{env.MYSQL_BIN_NAME}}${{env.MYSQL_BIN_EXT}}" >> $env:GITHUB_ENV
+          echo "CORE_REPO=Niam5/ElunaCataPreservation" >> $env:GITHUB_ENV
+          echo "CORE_FOLDER=${{github.workspace}}/ElunaCataPreservation" >> $env:GITHUB_ENV
+          echo "PROJECT_NAME=${{github.repository}}" >> $env:GITHUB_ENV
+          md -Force "${{env.CACHED_FOLDER}}"
+          md -Force "${{env.WORK_FOLDER}}"
+          md -Force "${{env.DB_FOLDER}}"
+      - name: Checkout DB
+        run: |
+          cd "${{env.DB_FOLDER}}"
+          gh release download --repo The-Cataclysm-Preservation-Project/TrinityCore --pattern '*.7z'
+          7z e TDB*.7z
+          rm TDB*.7z
+          $worldsql=gci -fi TDB_full_world*
+          $hotfixessql=gci -fi TDB_full_hotfixes*
+          echo "WORLD_SQL_FILE=${worldsql}" >> $env:GITHUB_ENV
+          echo "HOTFIXES_SQL_FILE=${hotfixessql}" >> $env:GITHUB_ENV
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Checkout CORE
+        uses: actions/checkout@v2
+        with:
+          repository: ${{env.CORE_REPO}}
+          path: ${{env.CORE_FOLDER}}
+
+      - name: Cache MySQL official zip
+        uses: actions/cache@v2
+        id: cache-mysqldownload
+        with:
+          path: "${{env.CACHED_FOLDER}}"
+          key: ${{ runner.os }}-${{ hashFiles('.github/workflows/build-release.yml') }}
+
+      - if: steps.cache-mysqldownload.outputs.cache-hit != 'true'
+        name: Download official mysql prebuild server
+        run: |
+          $MysqlArchive = Join-Path ${{env.CACHED_FOLDER}} ${{env.MYSQL_BIN_ARCH}}
+          if (-not(Test-Path -Path ${MysqlArchive} -PathType Leaf))
+          {
+              try
+              {
+                  (New-Object System.Net.WebClient).DownloadFile("${{env.MYSQL_PREBUILD_ADR}}", "${MysqlArchive}");
+              }
+              catch [Net.WebException]
+              {
+                Write-Host $_.Exception.ToString()
+                exit 1
+              }
+          }
+      - name: Extract MySQL archive
+        run: |
+          $MysqlArchive = Join-Path ${{env.CACHED_FOLDER}} ${{env.MYSQL_BIN_ARCH}}
+          Expand-Archive -LiteralPath "${MysqlArchive}" -DestinationPath "${{env.WORK_FOLDER}}" | Out-Null
+          Rename-Item "${{env.WORK_FOLDER}}\${{env.MYSQL_BIN_NAME}}" "${{env.WORK_FOLDER}}\${{env.MYSQL_FINAL_SERVER_FOLDER}}"
+          
+      - name: Add default config files and batch file
+        run: |
+          $DefaultConfFile = "# For advice on how to change settings please see`n"
+          $DefaultConfFile +="# http://dev.mysql.com/doc/refman/8.0/en/server-configuration-defaults.html`n"
+          $DefaultConfFile +="`n"
+          $DefaultConfFile +="[mysqld]`n"
+          $DefaultConfFile +="`n"
+          $DefaultConfFile +="basedir                           = `"${{env.MYSQL_FINAL_SERVER_FOLDER}}`"`n"
+          $DefaultConfFile +="datadir                           = `"data`"`n"
+          $DefaultConfFile +="port                              = 3306`n"
+          $BatchFile ="@echo off`n"
+          $BatchFile +="COLOR F`n"
+          $BatchFile +="echo                     ********************************************`n"
+          $BatchFile +="echo                     * MySQL for Cataclysm Preservation Project *`n"
+          $BatchFile +="echo                     * PORT : 3306                              *`n"
+          $BatchFile +="echo                     ********************************************`n"
+          $BatchFile +="echo.`n"
+          $BatchFile +="echo MySQL for Cata Preservation Project is currently running.`n"
+          $BatchFile +="echo Do not close this windows before your CORE server!`n"
+          $BatchFile +="echo You can use '.server shutdown 1' on your server console for that.`n"
+          $BatchFile +="echo You can also close this windows by pressing CTRL + C.`n"
+          $BatchFile +="echo. `n"
+          $BatchFile +="echo.`n"
+          $BatchFile +="`n"
+          $BatchFile +="for /f %%i in ('dir /a /b ${{env.MYSQL_FINAL_SERVER_FOLDER}}\data') do goto notempty`n"
+          $BatchFile +="echo First run detected!`n"
+          $BatchFile +="echo Please wait while initilizing database for first use...`n"
+          $BatchFile +="${{env.MYSQL_FINAL_SERVER_FOLDER}}\bin\mysqld --defaults-file=${{env.MYSQL_FINAL_SERVER_FOLDER}}\my.ini --initialize-insecure`n"
+          $BatchFile +="echo !!! YOUR ATTENTION PLEASE !!!`n"
+          $BatchFile +="echo For your security you have to set a password for root user`n"
+          $BatchFile +="echo You can do it with the following command`n"
+          $BatchFile +="echo %CD%\${{env.MYSQL_FINAL_SERVER_FOLDER}}\bin\mysql -uroot -e `"SET PASSWORD = 'Your_Password';`"`n"
+          $BatchFile +="`n"
+          $BatchFile +="`n"
+          $BatchFile +=":notempty`n"
+          $BatchFile +="${{env.MYSQL_FINAL_SERVER_FOLDER}}\bin\mysqld --defaults-file=${{env.MYSQL_FINAL_SERVER_FOLDER}}\my.ini --standalone --console`n"
+          $BatchFile +="if errorlevel 1 goto errorstarting`n"
+          $BatchFile +="goto finish`n"
+          $BatchFile +="`n"
+          $BatchFile +=":errorstarting`n"
+          $BatchFile +="echo.`n"
+          $BatchFile +="echo ERROR: the MySQL service could not be started.`n"
+          $BatchFile +="echo Please check if no other MySQL server is running.`n"
+          $BatchFile +="pause`n"
+          $BatchFile +="exit 1`n"
+          $BatchFile +="`n"
+          $BatchFile +=":finish`n"
+          $BatchFile +="echo MySQL server is now stopped.`n"
+          $BatchFile +="pause`n"
+          $BatchFile +="exit 0`n"
+          $DefaultConfFile | Out-File -FilePath "${{env.WORK_FOLDER}}\${{env.MYSQL_FINAL_SERVER_FOLDER}}\my.ini" -Encoding ASCII
+          $BatchFile | Out-File -FilePath "${{env.WORK_FOLDER}}\start-server.bat" -Encoding ASCII
+          
+      - name: Start mysql server
+        run: |
+          cd ${{env.WORK_FOLDER}}
+          $env:Path = "${{env.WORK_FOLDER}}\${{env.MYSQL_FINAL_SERVER_FOLDER}}\bin;$env:Path";
+          Start-Process cmd.exe "/c ${{env.WORK_FOLDER}}\start-server.bat"
+          $count = 0
+          while($true)
+          {
+            Start-Sleep -s 5
+            mysql -uroot --connect-timeout=2 -s -e';' | Out-Null
+            if ($LastExitCode -eq 0)
+            {
+              Write-Host "Success"
+              mysql -uroot -e"SET PASSWORD = '${{env.MYSQL_DEFAULT_ROOT}}';"
+              if ($LastExitCode -ne 0)
+              {
+                exit 1
+              }
+              break
+            }
+            else
+            {
+              if ($count -gt 30)
+              {
+                Write-Host "Fail"
+                exit 1
+              }
+            }
+            $count = $count + 1
+          }
+      - name: Build Cata Preservation DB
+        run: |
+          cd "${{env.WORK_FOLDER}}\${{env.MYSQL_FINAL_SERVER_FOLDER}}\bin"
+          cmd /c '.\mysql.exe -uroot -p${{env.MYSQL_DEFAULT_ROOT}} < ${{env.CORE_FOLDER}}/sql/create/create_mysql.sql'
+          cmd /c '.\mysql.exe -uroot -p${{env.MYSQL_DEFAULT_ROOT}} auth < ${{env.CORE_FOLDER}}/sql/base/auth_database.sql'
+          cmd /c '.\mysql.exe -uroot -p${{env.MYSQL_DEFAULT_ROOT}} characters < ${{env.CORE_FOLDER}}/sql/base/characters_database.sql'
+          cmd /c '.\mysql.exe -uroot -p${{env.MYSQL_DEFAULT_ROOT}} hotfixes < ${{env.HOTFIXES_SQL_FILE}}'
+          cmd /c '.\mysql.exe -uroot -p${{env.MYSQL_DEFAULT_ROOT}} world < ${{env.WORLD_SQL_FILE}}'
+          
+      - name: Stopping mysql server
+        run: |
+          Stop-Process -Name mysqld
+          Start-Sleep -s 10
+          cd "${{github.workspace}}"
+          
+      - name: Preparing assets
+        run: |
+          rm "${{env.WORK_FOLDER}}\mysql-server\bin\libprotobuf-debug.pdb"
+          rm "${{env.WORK_FOLDER}}\mysql-server\bin\libprotobuf-lite-debug.pdb"
+          rm "${{env.WORK_FOLDER}}\mysql-server\bin\mysqld.pdb"
+          
+      - name: Archive this artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: MySQL-Server
+          path: "${{env.WORK_FOLDER}}"
